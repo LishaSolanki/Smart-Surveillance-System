@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SENTINEL v2 — AI Surveillance</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&family=Exo+2:wght@200;300;400;600&display=swap" rel="stylesheet"/>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-deep:#050810; --bg-panel:#0a0f1e; --bg-card:#0d1426; --bg-card2:#111a30;
+    --cyan:#00e5ff; --red:#ff2d55; --amber:#ffaa00; --green:#00ff88; --purple:#a855f7;
+    --border:rgba(0,229,255,0.12); --border-b:rgba(0,229,255,0.35);
+    --t1:#e8f4ff; --t2:#7090b0; --t3:#3d5070;
+    --glow-c:0 0 20px rgba(0,229,255,0.3); --glow-r:0 0 20px rgba(255,45,85,0.4);
+  }
+  html,body{ height:100%; background:var(--bg-deep); color:var(--t1); font-family:'Exo 2',sans-serif; overflow:hidden; }
+  body::before{ content:''; position:fixed; inset:0; background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.03) 2px,rgba(0,0,0,0.03) 4px); pointer-events:none; z-index:9999; }
+  body::after{ content:''; position:fixed; inset:0; background-image:linear-gradient(rgba(0,229,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,229,255,0.03) 1px,transparent 1px); background-size:40px 40px; pointer-events:none; z-index:0; }
+ 
+  /* Header */
+  header{ position:relative; z-index:10; display:flex; align-items:center; justify-content:space-between; padding:0 20px; height:52px; background:rgba(5,8,16,0.97); border-bottom:1px solid var(--border-b); }
+  .logo{ display:flex; align-items:center; gap:10px; }
+  .logo-text{ font-family:'Share Tech Mono',monospace; font-size:20px; letter-spacing:5px; color:var(--cyan); text-shadow:var(--glow-c); }
+  .logo-sub{ font-size:9px; letter-spacing:3px; color:var(--t2); font-family:'Share Tech Mono',monospace; }
+  .logo-icon svg{ width:30px; height:30px; }
+  .hc{ display:flex; align-items:center; gap:16px; }
+  .sys-status{ display:flex; align-items:center; gap:7px; font-family:'Share Tech Mono',monospace; font-size:10px; color:var(--green); letter-spacing:2px; }
+  .sdot{ width:7px; height:7px; border-radius:50%; background:var(--green); animation:pg 2s infinite; box-shadow:0 0 7px var(--green); }
+  @keyframes pg{ 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+  .clock{ font-family:'Share Tech Mono',monospace; font-size:12px; color:var(--t2); letter-spacing:2px; }
+  .conn{ font-family:'Share Tech Mono',monospace; font-size:10px; padding:3px 8px; border-radius:2px; border:1px solid; }
+  .conn.ok{ color:var(--green); border-color:rgba(0,255,136,.3); }
+  .conn.no{ color:var(--red); border-color:rgba(255,45,85,.3); }
+  .yolo-badge{ font-family:'Share Tech Mono',monospace; font-size:9px; padding:3px 8px; border-radius:2px; border:1px solid; letter-spacing:1px; }
+  .yolo-badge.ready{ color:var(--cyan); border-color:rgba(0,229,255,.3); }
+  .yolo-badge.loading{ color:var(--amber); border-color:rgba(255,170,0,.3); animation:blink 1s infinite; }
+  .yolo-badge.error{ color:var(--red); border-color:rgba(255,45,85,.3); }
+  @keyframes blink{ 0%,100%{opacity:1} 50%{opacity:.4} }
+  .hr{ display:flex; align-items:center; gap:8px; }
+  .btn{ font-family:'Rajdhani',sans-serif; font-size:12px; font-weight:600; letter-spacing:2px; padding:6px 14px; border:1px solid; border-radius:2px; cursor:pointer; transition:all .2s; text-transform:uppercase; }
+  .btn-p{ background:rgba(0,229,255,.1); border-color:var(--cyan); color:var(--cyan); }
+  .btn-p:hover{ background:rgba(0,229,255,.2); box-shadow:var(--glow-c); }
+  .btn-d{ background:rgba(255,45,85,.1); border-color:var(--red); color:var(--red); }
+  .btn-d:hover{ background:rgba(255,45,85,.2); box-shadow:var(--glow-r); }
+  .btn-g{ background:transparent; border-color:var(--border-b); color:var(--t2); }
+  .btn-g:hover{ border-color:var(--cyan); color:var(--cyan); }
+  .btn-export{ background:rgba(168,85,247,.1); border-color:var(--purple); color:var(--purple); }
+  .btn-export:hover{ background:rgba(168,85,247,.2); box-shadow:0 0 15px rgba(168,85,247,.3); }
+ 
+  /* Layout */
+  .layout{ position:relative; z-index:5; display:grid; grid-template-columns:250px 1fr 295px; height:calc(100vh - 52px); }
+ 
+  /* Left sidebar */
+  .sl{ background:rgba(10,15,30,.97); border-right:1px solid var(--border); display:flex; flex-direction:column; overflow-y:auto; padding:14px; gap:12px; }
+  .sl::-webkit-scrollbar{ width:3px; }
+  .sl::-webkit-scrollbar-thumb{ background:var(--border-b); border-radius:2px; }
+  .sec-title{ font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:3px; color:var(--t3); text-transform:uppercase; margin-bottom:7px; padding-bottom:5px; border-bottom:1px solid var(--border); }
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .sc{ background:var(--bg-card); border:1px solid var(--border); border-radius:3px; padding:10px 9px; transition:border-color .3s; }
+  .sc:hover{ border-color:var(--border-b); }
+  .sc.a .sv{ color:var(--red); }
+  .sc.w .sv{ color:var(--amber); }
+  .sc.g .sv{ color:var(--green); }
+  .sc.p .sv{ color:var(--purple); }
+  .sv{ font-family:'Share Tech Mono',monospace; font-size:24px; line-height:1; color:var(--cyan); margin-bottom:3px; }
+  .sl-label{ font-size:9px; letter-spacing:1px; color:var(--t2); text-transform:uppercase; font-family:'Rajdhani',sans-serif; font-weight:600; }
+  .feat-list{ display:flex; flex-direction:column; gap:5px; }
+  .feat-item{ display:flex; align-items:center; justify-content:space-between; padding:7px 9px; background:var(--bg-card); border:1px solid var(--border); border-radius:3px; }
+  .feat-name{ font-size:11px; font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:1px; color:var(--t2); }
+  .toggle{ position:relative; width:34px; height:17px; }
+  .toggle input{ opacity:0; width:0; height:0; }
+  .tslider{ position:absolute; inset:0; background:rgba(255,255,255,.08); border-radius:17px; cursor:pointer; transition:.2s; border:1px solid rgba(255,255,255,.1); }
+  .tslider::before{ content:''; position:absolute; width:11px; height:11px; left:2px; bottom:2px; background:var(--t3); border-radius:50%; transition:.2s; }
+  .toggle input:checked + .tslider{ background:rgba(0,229,255,.2); border-color:var(--cyan); }
+  .toggle input:checked + .tslider::before{ transform:translateX(17px); background:var(--cyan); }
+  .set-row{ margin-bottom:9px; }
+  .set-label{ display:flex; justify-content:space-between; font-size:10px; font-family:'Rajdhani',sans-serif; font-weight:600; letter-spacing:1px; color:var(--t2); margin-bottom:5px; }
+  .set-label span{ color:var(--cyan); font-family:'Share Tech Mono',monospace; }
+  input[type=range]{ width:100%; -webkit-appearance:none; height:3px; background:var(--border-b); border-radius:3px; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:13px; height:13px; border-radius:50%; background:var(--cyan); cursor:pointer; box-shadow:0 0 7px rgba(0,229,255,.5); }
+  .upload-zone{ border:2px dashed var(--border-b); border-radius:3px; padding:12px; text-align:center; cursor:pointer; transition:all .2s; font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:2px; color:var(--t2); }
+  .upload-zone:hover{ border-color:var(--cyan); color:var(--cyan); background:rgba(0,229,255,.03); }
+  #fileInput{ display:none; }
+  .prog{ height:2px; background:var(--border); border-radius:2px; overflow:hidden; margin-top:5px; }
+  .prog-fill{ height:100%; background:linear-gradient(90deg,var(--cyan),var(--purple)); transition:width .3s; }
+  .export-row{ display:flex; gap:6px; }
+  .export-row .btn{ flex:1; font-size:11px; padding:6px 4px; }
+ 
+  /* Main video */
+  .mc{ display:flex; flex-direction:column; background:var(--bg-deep); overflow:hidden; }
+  .vh{ display:flex; align-items:center; justify-content:space-between; padding:9px 14px; background:rgba(10,15,30,.8); border-bottom:1px solid var(--border); }
+  .feed-label{ font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--cyan); }
+  .vc{ flex:1; position:relative; display:flex; align-items:center; justify-content:center; background:#020408; overflow:hidden; }
+  #vf{ max-width:100%; max-height:100%; object-fit:contain; display:block; }
+  .vp{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; color:var(--t3); position:absolute; inset:0; }
+  .vp svg{ opacity:.25; }
+  .vp-text{ font-family:'Share Tech Mono',monospace; font-size:12px; letter-spacing:3px; text-align:center; }
+  .corner{ position:absolute; width:18px; height:18px; border-color:var(--cyan); border-style:solid; opacity:.4; }
+  .ctl{ top:7px; left:7px; border-width:2px 0 0 2px; }
+  .ctr{ top:7px; right:7px; border-width:2px 2px 0 0; }
+  .cbl{ bottom:7px; left:7px; border-width:0 0 2px 2px; }
+  .cbr{ bottom:7px; right:7px; border-width:0 2px 2px 0; }
+  .scan{ position:absolute; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--cyan),transparent); opacity:.12; animation:scan 4s linear infinite; pointer-events:none; }
+  @keyframes scan{ from{top:0%} to{top:100%} }
+ 
+  /* Right sidebar */
+  .sr{ background:rgba(10,15,30,.97); border-left:1px solid var(--border); display:flex; flex-direction:column; overflow:hidden; }
+  .ah{ padding:12px 14px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .at{ font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:3px; color:var(--cyan); }
+  .ac{ background:var(--red); color:white; font-family:'Share Tech Mono',monospace; font-size:10px; padding:2px 6px; border-radius:10px; min-width:22px; text-align:center; box-shadow:var(--glow-r); animation:pr 2s infinite; }
+  @keyframes pr{ 0%,100%{box-shadow:0 0 7px rgba(255,45,85,.4)} 50%{box-shadow:0 0 18px rgba(255,45,85,.7)} }
+  .al{ flex:1; overflow-y:auto; padding:8px; display:flex; flex-direction:column; gap:5px; }
+  .al::-webkit-scrollbar{ width:3px; }
+  .al::-webkit-scrollbar-thumb{ background:var(--border-b); border-radius:2px; }
+  .ai{ background:var(--bg-card); border-left:3px solid; border-radius:2px; padding:9px 11px; animation:si .3s ease-out; cursor:pointer; transition:background .2s; }
+  .ai:hover{ background:var(--bg-card2); }
+  @keyframes si{ from{opacity:0;transform:translateX(16px)} to{opacity:1;transform:translateX(0)} }
+  .ai.critical{ border-color:var(--red); }
+  .ai.warning{ border-color:var(--amber); }
+  .ai.info{ border-color:var(--cyan); }
+  .ai-type{ font-family:'Share Tech Mono',monospace; font-size:9px; letter-spacing:2px; margin-bottom:3px; }
+  .ai.critical .ai-type{ color:var(--red); }
+  .ai.warning  .ai-type{ color:var(--amber); }
+  .ai.info     .ai-type{ color:var(--cyan); }
+  .ai-msg{ font-size:11px; color:var(--t1); line-height:1.4; font-family:'Rajdhani',sans-serif; font-weight:500; }
+  .ai-time{ font-family:'Share Tech Mono',monospace; font-size:9px; color:var(--t3); margin-top:4px; }
+  .ai-snap{ font-size:9px; color:var(--purple); margin-top:2px; text-decoration:underline; }
+  .no-alerts{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; color:var(--t3); height:100%; font-family:'Share Tech Mono',monospace; font-size:10px; letter-spacing:2px; text-align:center; padding:20px; }
+  .mini-chart{ padding:8px 14px; border-top:1px solid var(--border); }
+  .mc-title{ font-family:'Share Tech Mono',monospace; font-size:8px; letter-spacing:2px; color:var(--t3); margin-bottom:6px; }
+  .cbars{ display:flex; align-items:flex-end; gap:3px; height:44px; }
+  .cbar{ flex:1; border-radius:1px 1px 0 0; transition:height .5s; min-height:2px; }
+  .cbar.critical{ background:linear-gradient(to top,var(--red),rgba(255,45,85,.3)); }
+  .cbar.mixed{ background:linear-gradient(to top,var(--cyan),rgba(0,229,255,.3)); }
+  .alert-flash{ position:fixed; top:58px; right:305px; background:rgba(255,45,85,.95); color:white; padding:9px 18px; border-radius:3px; font-family:'Share Tech Mono',monospace; font-size:11px; letter-spacing:2px; z-index:9998; animation:fIn .3s ease-out,fOut .5s 2s forwards; box-shadow:var(--glow-r); }
+  @keyframes fIn{ from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+  @keyframes fOut{ to{opacity:0;transform:translateY(-8px)} }
+  .pct{ font-family:'Share Tech Mono',monospace; font-size:11px; color:var(--t2); letter-spacing:2px; }
+</style>
+</head>
+<body>
+ 
+<header>
+  <div class="logo">
+    <div class="logo-icon">
+      <svg viewBox="0 0 34 34" fill="none">
+        <circle cx="17" cy="17" r="16" stroke="#00e5ff" stroke-width="1.5" opacity=".4"/>
+        <circle cx="17" cy="17" r="10" stroke="#00e5ff" stroke-width="1.5" opacity=".7"/>
+        <circle cx="17" cy="17" r="4" fill="#00e5ff"/>
+        <line x1="17" y1="1" x2="17" y2="7" stroke="#00e5ff" stroke-width="1.5"/>
+        <line x1="17" y1="27" x2="17" y2="33" stroke="#00e5ff" stroke-width="1.5"/>
+        <line x1="1" y1="17" x2="7" y2="17" stroke="#00e5ff" stroke-width="1.5"/>
+        <line x1="27" y1="17" x2="33" y2="17" stroke="#00e5ff" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div>
+      <div class="logo-text">SENTINEL</div>
+      <div class="logo-sub">AI SURVEILLANCE v2.0 — PUBLIC SAFETY</div>
+    </div>
+  </div>
+  <div class="hc">
+    <div class="sys-status"><div class="sdot"></div><span>SYSTEM ONLINE</span></div>
+    <div class="yolo-badge loading" id="yoloBadge">● YOLO LOADING</div>
+    <div class="clock" id="clock">--:--:--</div>
+    <div class="conn no" id="connStatus">● DISCONNECTED</div>
+  </div>
+  <div class="hr">
+    <button class="btn btn-g" onclick="resetStats()">RESET</button>
+    <button class="btn btn-g" onclick="clearAlerts()">CLEAR</button>
+  </div>
+</header>
+ 
+<div class="layout">
+ 
+  <!-- Left sidebar -->
+  <div class="sl">
+    <div>
+      <div class="sec-title">LIVE STATISTICS</div>
+      <div class="stat-grid">
+        <div class="sc g"><div class="sv" id="sP">0</div><div class="sl-label">People</div></div>
+        <div class="sc a"><div class="sv" id="sA">0</div><div class="sl-label">Total Alerts</div></div>
+        <div class="sc w"><div class="sv" id="sZ">0</div><div class="sl-label">Zone Violations</div></div>
+        <div class="sc w"><div class="sv" id="sL">0</div><div class="sl-label">Loitering</div></div>
+        <div class="sc a"><div class="sv" id="sF">0</div><div class="sl-label">Fights</div></div>
+        <div class="sc p"><div class="sv" id="sW">0</div><div class="sl-label">Weapons</div></div>
+      </div>
+    </div>
+ 
+    <div>
+      <div class="sec-title">DETECTION MODULES</div>
+      <div class="feat-list">
+        <div class="feat-item"><span class="feat-name">ZONE INTRUSION</span>
+          <label class="toggle"><input type="checkbox" checked onchange="toggleFeature('zone_intrusion',this.checked)"/><span class="tslider"></span></label></div>
+        <div class="feat-item"><span class="feat-name">CROWD DENSITY</span>
+          <label class="toggle"><input type="checkbox" checked onchange="toggleFeature('crowd_density',this.checked)"/><span class="tslider"></span></label></div>
+        <div class="feat-item"><span class="feat-name">LOITERING</span>
+          <label class="toggle"><input type="checkbox" checked onchange="toggleFeature('loitering',this.checked)"/><span class="tslider"></span></label></div>
+        <div class="feat-item"><span class="feat-name">FIGHT DETECTION</span>
+          <label class="toggle"><input type="checkbox" checked onchange="toggleFeature('anomaly',this.checked)"/><span class="tslider"></span></label></div>
+        <div class="feat-item"><span class="feat-name">WEAPON DETECT</span>
+          <label class="toggle"><input type="checkbox" checked onchange="toggleFeature('weapon',this.checked)"/><span class="tslider"></span></label></div>
+      </div>
+    </div>
+ 
+    <div>
+      <div class="sec-title">THRESHOLDS</div>
+      <div class="set-row">
+        <div class="set-label">CROWD LIMIT <span id="crowdVal">5</span> people</div>
+        <input type="range" min="2" max="30" value="5" oninput="updateSetting('crowd',this.value)"/>
+      </div>
+      <div class="set-row">
+        <div class="set-label">LOITER TIMER <span id="loiterVal">15</span>s</div>
+        <input type="range" min="5" max="60" value="15" oninput="updateSetting('loiter',this.value)"/>
+      </div>
+      <div class="set-row">
+        <div class="set-label">FIGHT SPEED <span id="fightVal">40</span>px/f</div>
+        <input type="range" min="15" max="80" value="40" oninput="updateSetting('fight',this.value)"/>
+      </div>
+    </div>
+ 
+    <div>
+      <div class="sec-title">VIDEO SOURCE</div>
+      <div class="upload-zone" onclick="document.getElementById('fileInput').click()">▲ UPLOAD VIDEO FILE</div>
+      <input type="file" id="fileInput" accept="video/*" onchange="uploadVideo(this)"/>
+      <div class="prog" id="progBar" style="display:none"><div class="prog-fill" id="progFill" style="width:0%"></div></div>
+      <div style="margin-top:8px;display:flex;flex-direction:column;gap:5px;">
+        <button class="btn btn-p" style="width:100%" onclick="startWebcam()">▶ START WEBCAM</button>
+        <button class="btn btn-d" style="width:100%" onclick="stopStream()">■ STOP STREAM</button>
+      </div>
+    </div>
+ 
+    <div>
+      <div class="sec-title">TEST ALERTS</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button class="btn btn-g" style="font-size:10px;padding:5px;width:100%;text-align:left" onclick="testAlert('ZONE_INTRUSION')">🚫 TEST ZONE INTRUSION</button>
+        <button class="btn btn-g" style="font-size:10px;padding:5px;width:100%;text-align:left" onclick="testAlert('WEAPON')">🔫 TEST WEAPON DETECT</button>
+        <button class="btn btn-g" style="font-size:10px;padding:5px;width:100%;text-align:left" onclick="testAlert('FIGHT')">⚡ TEST FIGHT DETECT</button>
+        <button class="btn btn-g" style="font-size:10px;padding:5px;width:100%;text-align:left" onclick="testAlert('CROWD_DENSITY')">👥 TEST CROWD DENSITY</button>
+        <button class="btn btn-g" style="font-size:10px;padding:5px;width:100%;text-align:left" onclick="testAlert('LOITERING')">⏱ TEST LOITERING</button>
+      </div>
+    </div>
+ 
+    <div>
+      <div class="sec-title">EXPORT REPORTS</div>
+      <div class="export-row">
+        <button class="btn btn-export" onclick="exportReport('csv')">⬇ CSV</button>
+        <button class="btn btn-export" onclick="exportReport('pdf')">⬇ PDF</button>
+      </div>
+      <div style="font-family:'Share Tech Mono',monospace;font-size:9px;color:var(--t3);margin-top:6px;text-align:center;letter-spacing:1px;" id="exportStatus"></div>
+    </div>
+  </div>
+ 
+  <!-- Video -->
+  <div class="mc">
+    <div class="vh">
+      <div class="feed-label" id="feedLabel">● FEED 01 — AWAITING SOURCE</div>
+      <div class="pct" id="pct">People: 0</div>
+    </div>
+    <div class="vc">
+      <div class="corner ctl"></div><div class="corner ctr"></div>
+      <div class="corner cbl"></div><div class="corner cbr"></div>
+      <div class="scan"></div>
+      <div class="vp" id="placeholder">
+        <svg width="70" height="70" viewBox="0 0 80 80" fill="none">
+          <circle cx="40" cy="40" r="38" stroke="#00e5ff" stroke-width="1.5"/>
+          <circle cx="40" cy="40" r="25" stroke="#00e5ff" stroke-width="1.5"/>
+          <circle cx="40" cy="40" r="8" fill="#00e5ff"/>
+          <line x1="40" y1="2" x2="40" y2="15" stroke="#00e5ff" stroke-width="1.5"/>
+          <line x1="40" y1="65" x2="40" y2="78" stroke="#00e5ff" stroke-width="1.5"/>
+          <line x1="2" y1="40" x2="15" y2="40" stroke="#00e5ff" stroke-width="1.5"/>
+          <line x1="65" y1="40" x2="78" y2="40" stroke="#00e5ff" stroke-width="1.5"/>
+        </svg>
+        <div class="vp-text">SELECT A VIDEO SOURCE<br/>TO BEGIN SURVEILLANCE</div>
+      </div>
+      <img id="vf" style="display:none" alt="Feed"/>
+    </div>
+  </div>
+ 
+  <!-- Right sidebar -->
+  <div class="sr">
+    <div class="ah">
+      <div class="at">⚠ ALERT FEED</div>
+      <div class="ac" id="alertCount">0</div>
+    </div>
+    <div class="al" id="alertsList">
+      <div class="no-alerts">
+        <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+          <path d="M16 4L30 28H2L16 4Z" stroke="#3d5070" stroke-width="1.5" fill="none"/>
+          <line x1="16" y1="13" x2="16" y2="20" stroke="#3d5070" stroke-width="2"/>
+          <circle cx="16" cy="24" r="1.5" fill="#3d5070"/>
+        </svg>
+        AWAITING ALERTS
+      </div>
+    </div>
+    <div class="mini-chart">
+      <div class="mc-title">ALERT FREQUENCY — LAST 40s</div>
+      <div class="cbars" id="chartBars"></div>
+    </div>
+  </div>
+</div>
+ 
+<script>
+let ws = null, reconnTimer = null, totalAlerts = 0;
+let buckets = new Array(20).fill(0);
+let bucketTypes = new Array(20).fill('mixed');
+let flashLock = false;
+ 
+const ICONS = {
+  ZONE_INTRUSION:'🚫', CROWD_DENSITY:'👥', LOITERING:'⏱',
+  FIGHT:'⚡', ANOMALY:'⚡', WEAPON:'🔫',
+};
+ 
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen  = () => {
+    document.getElementById('connStatus').textContent = '● CONNECTED';
+    document.getElementById('connStatus').className = 'conn ok';
+    if (reconnTimer) clearTimeout(reconnTimer);
+  };
+  ws.onclose = () => {
+    document.getElementById('connStatus').textContent = '● DISCONNECTED';
+    document.getElementById('connStatus').className = 'conn no';
+    reconnTimer = setTimeout(connect, 3000);
+  };
+  ws.onerror = () => ws.close();
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'frame')        handleFrame(d);
+    else if (d.type === 'frame_alert') handleTestAlert(d);
+    else if (d.type === 'yolo_status') updateYoloStatus(d.status);
+    else if (d.type === 'stream_ended') onEnd();
+    else if (d.type === 'error')   showError(d.message);
+  };
+}
+ 
+function send(data) {
+  if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(data));
+}
+ 
+function updateYoloStatus(status) {
+  const el = document.getElementById('yoloBadge');
+  const map = {
+    loading:     ['● YOLO LOADING', 'loading'],
+    ready:       ['● YOLO READY',   'ready'],
+    error:       ['● YOLO ERROR',   'error'],
+    unavailable: ['● CV FALLBACK',  'error'],
+  };
+  const [txt, cls] = map[status] || ['● UNKNOWN', 'error'];
+  el.textContent = txt;
+  el.className = `yolo-badge ${cls}`;
+}
+ 
+function handleFrame(d) {
+  const img = document.getElementById('vf');
+  img.src = 'data:image/jpeg;base64,' + d.frame;
+  img.style.display = 'block';
+  document.getElementById('placeholder').style.display = 'none';
+ 
+  const s = d.stats;
+  document.getElementById('sP').textContent = d.people_count;
+  document.getElementById('sA').textContent = s.total_alerts;
+  document.getElementById('sZ').textContent = s.zone_violations;
+  document.getElementById('sL').textContent = s.loitering_incidents;
+  document.getElementById('sF').textContent = s.fight_detections || 0;
+  document.getElementById('sW').textContent = s.weapon_detections;
+  document.getElementById('pct').textContent = `People: ${d.people_count}`;
+  document.getElementById('feedLabel').textContent = `● FEED 01 — ${d.source.toUpperCase()} ${d.yolo ? '[YOLO]' : '[CV]'}`;
+ 
+  if (d.alerts && d.alerts.length > 0) {
+    d.alerts.forEach(a => addAlert(a));
+    buckets[buckets.length - 1] += d.alerts.length;
+    const hasCritical = d.alerts.some(a => a.severity === 'critical');
+    bucketTypes[bucketTypes.length - 1] = hasCritical ? 'critical' : 'mixed';
+    totalAlerts += d.alerts.length;
+    document.getElementById('alertCount').textContent = Math.min(totalAlerts, 99);
+    if (hasCritical) showFlash(d.alerts.find(a => a.severity === 'critical'));
+  }
+}
+ 
+function addAlert(a) {
+  const list = document.getElementById('alertsList');
+  list.querySelector('.no-alerts')?.remove();
+  const icon = ICONS[a.type] || '⚠';
+  const time = new Date(a.timestamp).toLocaleTimeString();
+  const el = document.createElement('div');
+  el.className = `ai ${a.severity === 'critical' ? 'critical' : 'warning'}`;
+  el.innerHTML = `
+    <div class="ai-type">${icon} ${a.type.replace('_',' ')}</div>
+    <div class="ai-msg">${a.message}</div>
+    <div class="ai-time">${time}</div>
+    ${a.snapshot ? `<div class="ai-snap" onclick="viewSnap('${a.snapshot}')">📷 View snapshot</div>` : ''}
+  `;
+  list.insertBefore(el, list.firstChild);
+  while (list.children.length > 60) list.removeChild(list.lastChild);
+}
+ 
+function viewSnap(filename) {
+  window.open(`/snapshots/${filename}`, '_blank');
+}
+ 
+function showFlash(alert) {
+  if (flashLock) return;
+  flashLock = true;
+  const f = document.createElement('div');
+  f.className = 'alert-flash';
+  f.textContent = `⚠ ${alert.type.replace('_',' ')} DETECTED`;
+  document.body.appendChild(f);
+  setTimeout(() => { f.remove(); flashLock = false; }, 2600);
+}
+ 
+function showError(msg) {
+  const f = document.createElement('div');
+  f.className = 'alert-flash';
+  f.style.background = 'rgba(255,170,0,.95)';
+  f.textContent = `⚠ ${msg}`;
+  document.body.appendChild(f);
+  setTimeout(() => f.remove(), 3000);
+}
+ 
+function onEnd() {
+  document.getElementById('feedLabel').textContent = '● FEED 01 — STREAM ENDED';
+}
+ 
+// Chart
+setInterval(() => {
+  buckets.push(0); buckets.shift();
+  bucketTypes.push('mixed'); bucketTypes.shift();
+  const max = Math.max(...buckets, 1);
+  document.getElementById('chartBars').innerHTML =
+    buckets.map((v,i) => {
+      const pct = Math.round((v/max)*100);
+      return `<div class="cbar ${bucketTypes[i]}" style="height:${Math.max(pct,2)}%"></div>`;
+    }).join('');
+}, 2000);
+ 
+// Controls
+function startWebcam() { send({action:'start_webcam'}); }
+function stopStream()  {
+  send({action:'stop_stream'});
+  document.getElementById('vf').style.display = 'none';
+  document.getElementById('placeholder').style.display = 'flex';
+  document.getElementById('feedLabel').textContent = '● FEED 01 — AWAITING SOURCE';
+}
+ 
+async function uploadVideo(input) {
+  if (!input.files[0]) return;
+  const bar = document.getElementById('progBar');
+  const fill = document.getElementById('progFill');
+  bar.style.display = 'block'; fill.style.width = '20%';
+  const form = new FormData();
+  form.append('file', input.files[0]);
+  try {
+    fill.style.width = '60%';
+    const res = await fetch('/upload-video', {method:'POST', body:form});
+    fill.style.width = '100%';
+    setTimeout(() => { bar.style.display = 'none'; fill.style.width = '0%'; }, 800);
+    if (!res.ok) showError('Upload failed');
+  } catch(e) { showError('Upload error: '+e.message); bar.style.display = 'none'; }
+}
+ 
+function toggleFeature(f, v) { send({action:'update_settings', features:{[f]:v}}); }
+ 
+function updateSetting(type, val) {
+  val = parseInt(val);
+  if (type === 'crowd')  { document.getElementById('crowdVal').textContent = val;  send({action:'update_settings', crowd_threshold:val}); }
+  if (type === 'loiter') { document.getElementById('loiterVal').textContent = val; send({action:'update_settings', loiter_seconds:val}); }
+  if (type === 'fight')  { document.getElementById('fightVal').textContent = val;  send({action:'update_settings', fight_speed:val}); }
+}
+ 
+async function clearAlerts() {
+  await fetch('/clear-alerts',{method:'POST'});
+  document.getElementById('alertsList').innerHTML = `
+    <div class="no-alerts">
+      <svg width="28" height="28" viewBox="0 0 32 32" fill="none">
+        <path d="M16 4L30 28H2L16 4Z" stroke="#3d5070" stroke-width="1.5" fill="none"/>
+        <line x1="16" y1="13" x2="16" y2="20" stroke="#3d5070" stroke-width="2"/>
+        <circle cx="16" cy="24" r="1.5" fill="#3d5070"/>
+      </svg>AWAITING ALERTS</div>`;
+  totalAlerts = 0;
+  document.getElementById('alertCount').textContent = '0';
+}
+ 
+async function resetStats() {
+  await fetch('/reset-stats',{method:'POST'});
+  ['sP','sA','sZ','sL','sF','sW'].forEach(id => document.getElementById(id).textContent = '0');
+}
+ 
+function testAlert(type) { send({action:'test_alert', alert_type:type}); }
+ 
+function handleTestAlert(d) {
+  const s = d.stats;
+  document.getElementById('sA').textContent = s.total_alerts;
+  document.getElementById('sZ').textContent = s.zone_violations;
+  document.getElementById('sL').textContent = s.loitering_incidents;
+  document.getElementById('sF').textContent = s.fight_detections || 0;
+  document.getElementById('sW').textContent = s.weapon_detections;
+  if (d.alerts && d.alerts.length > 0) {
+    d.alerts.forEach(a => addAlert(a));
+    totalAlerts += d.alerts.length;
+    document.getElementById('alertCount').textContent = Math.min(totalAlerts,99);
+    if (d.alerts[0].severity === 'critical') showFlash(d.alerts[0]);
+  }
+}
+ 
+async function exportReport(type) {
+  const status = document.getElementById('exportStatus');
+  status.textContent = `GENERATING ${type.toUpperCase()}...`;
+  try {
+    const res = await fetch(`/export/${type}`);
+    if (!res.ok) {
+      const err = await res.json();
+      status.textContent = 'ERROR: ' + (err.detail || 'Failed');
+      return;
+    }
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `sentinel_report_${Date.now()}.${type}`;
+    a.click();
+    URL.revokeObjectURL(url);
+    status.textContent = `✓ ${type.toUpperCase()} EXPORTED`;
+    setTimeout(() => status.textContent = '', 3000);
+  } catch(e) {
+    status.textContent = 'EXPORT FAILED';
+  }
+}
+ 
+// Clock
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US',{hour12:false});
+}, 1000);
+ 
+connect();
+</script>
+</body>
+</html>
